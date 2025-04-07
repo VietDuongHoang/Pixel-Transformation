@@ -99,9 +99,9 @@ def main():
     seed = torch.Generator().manual_seed(42)
     trainset, validset = data.random_split(traindata, [trainset_size, validset_size], generator=seed)
 
-    train_loader = DataLoader(trainset, batch_size=batch_size, num_workers=0, shuffle=True, pin_memory=True)
-    val_loader = DataLoader(validset, batch_size=batch_size, num_workers=0, shuffle=False, pin_memory=True)
-    test_loader = DataLoader(testset, batch_size=batch_size, num_workers=0, shuffle=False, pin_memory=True)
+    train_loader = DataLoader(trainset, batch_size=batch_size, num_workers=2, shuffle=True, pin_memory=True)
+    val_loader = DataLoader(validset, batch_size=batch_size, num_workers=2, shuffle=False, pin_memory=True)
+    test_loader = DataLoader(testset, batch_size=batch_size, num_workers=2, shuffle=False, pin_memory=True)
 
     classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
