@@ -4,7 +4,7 @@ import torch
 import torch.fft
 import torch.nn as nn
 
-from timm.models.layers import DropPath, to_2tuple, trunc_normal_
+from timm.models.layers import DropPath, to_2tuple
 
 
 class Mlp(nn.Module):
@@ -90,41 +90,4 @@ class PatchEmbed(nn.Module):
         assert H == self.img_size[0] and W == self.img_size[1], \
             f"Input image size ({H}*{W}) doesn't match model ({self.img_size[0]}*{self.img_size[1]})."
         x = self.proj(x).flatten(2).transpose(1, 2)
-        return x
-
-
-class BlockLayerScale(nn.Module):
-
-    def __init__(self, dim, mlp_ratio=4., drop=0., drop_path=0., act_layer=nn.GELU, 
-                norm_layer=nn.LayerNorm, h=14, w=8, init_values=1e-5):
-        super().__init__()
-        self.norm1 = norm_layer(dim)
-        self.filter = GlobalFilter(dim, h=h, w=w)
-        self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
-        self.norm2 = norm_layer(dim)
-        mlp_hidden_dim = int(dim * mlp_ratio)
-        self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
-        self.gamma = nn.Parameter(init_values * torch.ones((dim)),requires_grad=True)
-
-    def forward(self, x):
-        x = x + self.drop_path(self.gamma * self.mlp(self.norm2(self.filter(self.norm1(x)))))
-        return x
-
-
-class DownLayer(nn.Module):
-    """ Image to Patch Embedding
-    """
-    def __init__(self, img_size=56, dim_in=64, dim_out=128):
-        super().__init__()
-        self.img_size = img_size
-        self.dim_in = dim_in
-        self.dim_out = dim_out
-        self.proj = nn.Conv2d(dim_in, dim_out, kernel_size=2, stride=2)
-        self.num_patches = img_size * img_size // 4
-
-    def forward(self, x):
-        B, N, C = x.size()
-        x = x.view(B, self.img_size, self.img_size, C).permute(0, 3, 1, 2)
-        x = self.proj(x).permute(0, 2, 3, 1)
-        x = x.reshape(B, -1, self.dim_out)
         return x

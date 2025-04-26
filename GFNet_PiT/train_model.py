@@ -7,7 +7,7 @@ import torch.utils.data as data
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
-from model import GFNetPyramid
+from model import GFNet
 from checkpoint import load_checkpoint, save_checkpoint, checkpoint_path, checkpoint_path_best
 
 from tqdm import tqdm
@@ -114,27 +114,28 @@ def main():
     classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
     # Instantiate the model.
-    GFNetPyramid_model = GFNetPyramid(img_size = 32, patch_size = 1, embed_dim=[64, 128, 256, 512],
-                  num_classes = 100, depth=[2, 2, 10, 4], mlp_ratio=[4, 4, 4, 4], drop_rate = 0.2).to(device)
+    GFNet_model = GFNet(img_size = 32, patch_size = 1, in_chans=3, embed_dim = 256,
+                  num_classes = 100, depth = 6, mlp_ratio=4., drop_rate = 0.2).to(device)
 
     # Using multi GPUs
     print("Available GPUs:", torch.cuda.device_count())
     if torch.cuda.device_count() > 1:
-        GFNetPyramid_model = nn.DataParallel(GFNetPyramid_model)
+        GFNet_model = nn.DataParallel(GFNet_model)
 
     # Number of Trainable parameters
-    trainable_params = sum(p.numel() for p in GFNetPyramid_model.parameters() if p.requires_grad)
+    trainable_params = sum(p.numel() for p in GFNet_model.parameters() if p.requires_grad)
     print(f"Trainable parameters: {trainable_params}")
 
-    criterion_GFNetPyramid = nn.CrossEntropyLoss()
-    optimizer_GFNetPyramid = optim.AdamW(GFNetPyramid_model.parameters(), lr=learning_rate, weight_decay=0.01)
-    scheduler_GFNetPyramid = optim.lr_scheduler.CosineAnnealingLR(optimizer_GFNetPyramid, T_max=10)
+    criterion_GFNet = nn.CrossEntropyLoss()
+    optimizer_GFNet = optim.AdamW(GFNet_model.parameters(), lr=learning_rate, weight_decay=0.01)
+    scheduler_GFNet = optim.lr_scheduler.CosineAnnealingLR(optimizer_GFNet, T_max=10)
 
-    GFNetPyramid_model, optimizer_GFNetPyramid, start_epoch, last_loss = load_checkpoint(GFNetPyramid_model, optimizer_GFNetPyramid, checkpoint_path)
+    previous_model = checkpoint_path
+    GFNet_model, optimizer_GFNet, start_epoch, last_loss = load_checkpoint(GFNet_model, optimizer_GFNet, previous_model)
 
     # Train the model.
-    train_model(GFNetPyramid_model, train_loader, val_loader, optimizer_GFNetPyramid, 
-                criterion_GFNetPyramid, scheduler_GFNetPyramid, start_epoch, EPOCHS, device, model_name = "GFNetPyramid")
+    train_model(GFNet_model, train_loader, val_loader, optimizer_GFNet, 
+                criterion_GFNet, scheduler_GFNet, start_epoch, EPOCHS, device, model_name = "GFNet")
 
 if __name__ == '__main__':
     main()
